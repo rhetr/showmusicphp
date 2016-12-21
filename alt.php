@@ -47,10 +47,18 @@ width:33%;
 float: right;
 }
 
+.top-pad {
+height:3em;
+padding-bottom:12px;
+}
+
 #player {
+width:100%;
 background: #AEAEAE;
 display: flex;
 align-items: center;
+position: fixed;
+top:0;
 padding: 10px 0px;
 }
 
@@ -175,13 +183,14 @@ $contents = getDirContents($root);
 ?>
 
 <body>
+<div class="top-pad"></div>
 <div id="player">
     <button id="playbutton" class="play"></button>
     <div id="playing"></div>
 </div>
 <div class="right">
-    <h3> json </h3>
-    <pre id="json"></pre>
+    <!--h3> json </h3>
+    <pre id="json"></pre-->
 </div>
 <div class="left">
     <div id="browser">
@@ -223,39 +232,45 @@ function Player() {
     this.playing = false;
     this.current_audio = null;
     this.button = document.getElementById("playbutton");
+    this.button.addEventListener("click", this.toggle.bind(this));
     this.div = document.getElementById("playing");
     this.div.innerHTML = "not playing";
+}
+
+Player.prototype.toggle = function() {
+    if (this.playing) {
+	this.current_audio.elem.pause();
+	this.playing = false;
+
+	this.button.className = 'play';
+    }
+    else if (this.current_audio != null) {
+	this.current_audio.elem.play();
+	this.playing = true;
+
+	this.button.className = 'pause';
+	this.div.innerHTML = this.current_audio.path;
+    }
 }
 
 Player.prototype.trigger = function(audio_file) {
     if (this.current_audio === null) {
 	this.current_audio = audio_file;
-	this.current_audio.elem.play();
-	this.playing = true;
-    }
-    else if (this.current_audio === audio_file) {
-	if (this.playing) {
-	    this.current_audio.elem.pause();
-	    this.playing = false;
-	}
-	else {
-	    this.current_audio.elem.play();
-	    this.playing = true;
-	}
     }
     else if (this.current_audio != audio_file) {
 	this.current_audio.elem.pause();
+	this.playing = false;
 	this.current_audio = audio_file;
-	this.current_audio.elem.play();
-	this.playing = true;
     }
-    if (this.playing) {
-	this.button.className = 'pause';
-	this.div.innerHTML = this.current_audio.path;
-    }
-    else {
-	this.button.className = 'play';
-    }
+    this.toggle();
+}
+
+Player.prototype.clear = function() {
+    // this.current_audio.elem.pause();
+    this.playing = false;
+    this.current_audio = null;
+    this.div.innerHTML = "not playing";
+    this.button.className = 'play';
 }
 
 function addParents(dir, par = null) {
@@ -316,8 +331,8 @@ function makeFileDiv(name) {
 }
 
 function changeDir(cwd) {
-    player.div.innerHTML = "not playing";
-    player.button.className = 'play';
+    player.clear();
+
     fileFrag = document.createElement("div");
     fileFrag.id = "files";
     for (f in cwd.files) {
@@ -379,8 +394,8 @@ for (i in qs) {
     }
 }
 
-var nondata = <?php echo json_encode($contents); ?>;
-document.getElementById("json").innerHTML = JSON.stringify(nondata, undefined, 2);
+// var nondata = <?php echo json_encode($contents); ?>;
+// document.getElementById("json").innerHTML = JSON.stringify(nondata, undefined, 2);
 </script>
 </body>
 
