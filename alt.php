@@ -16,12 +16,33 @@ font-family: 'Cantarell', sans-serif;
 font-size: 0.8em;
 }
 
-.folder {
-float:left;
+#cwd, #folders, #files {
+border-radius:5px;
+padding:0.5em;
+}
+
+#cwd {
+background: #faebd7;
+overflow: auto;
 }
 
 #folders {
-display:inline-block;
+background-color: #FCF6F1;
+}
+
+.breadcrumb {
+float:left;
+margin:1px;
+}
+
+.left {
+width:63%;
+margin: 20px 2%;
+}
+
+.right {
+width:33%;
+float: right;
 }
 
 .clickable {
@@ -37,16 +58,7 @@ border: 1px solid #6699EE;
 text-shadow: 0 0 1px;
 }
 
-.left {
-width:63%;
-margin: 20px 2%;
-}
-
-.right {
-width:33%;
-float: right;
-}
-
+/* player */
 .top-pad {
 height:3em;
 padding-bottom:12px;
@@ -62,17 +74,31 @@ top:0;
 padding: 10px 0px;
 }
 
-#player > * {
-margin-left:1em;
+#playbutton {
+margin-left:2%;
 /*padding: 20px;*/
 }
 
-#cwd {
-background: #faebd7;
-padding:0.5em;
-border-radius:5px;
+#song {
+width:90%;
+margin-left:1em;
 }
 
+#timeline {
+width: 100%;
+height: 1em;
+}
+
+#full-timeline {
+padding-top: 0.5em;
+border-bottom: 2px solid white;
+}
+
+#elapsed-timeline {
+margin-top: -2px;
+border-top: 2px solid black;
+width: 0;
+}
 
 .duration {
 float:right;
@@ -186,7 +212,14 @@ $contents = getDirContents($root);
 <div class="top-pad"></div>
 <div id="player">
     <button id="playbutton" class="play"></button>
-    <div id="playing"></div>
+    <div id="song">
+	<div id="playing"></div>
+	<div id="timeline">
+	    <div id="full-timeline"></div>
+	    <div id="elapsed-timeline"></div>
+	    <div id="playhead"></div>
+	</div>
+    </div>
 </div>
 <div class="right">
     <!--h3> json </h3>
@@ -196,10 +229,10 @@ $contents = getDirContents($root);
     <div id="browser">
 	<div id="cwd"></div>
 	<div>
-	    <h3> folders </h3>
+	    <!--h3> folders </h3-->
 	    <div id="folders"></div>
 	</div>
-	<h3> files </h3>
+	<!--h3> files </h3-->
 	<div id="files"></div>
     </div>
 </div>
@@ -228,6 +261,20 @@ function AudioFile(path, elem, durationElem) {
     }.bind(this));
 }
 
+
+function Timeline() {
+    this.elapsed_div = document.getElementById("elapsed-timeline");
+    this.full_div = document.getElementById("full-timeline");
+    this.playhead = document.getElementById("playhead");
+    this.update(0,1);
+}
+
+
+Timeline.prototype.update = function(cur_time, total_time) {
+    percent = cur_time / total_time * 100;
+    this.elapsed_div.style.width = percent.toString() + "%";
+}
+
 function Player() {
     this.playing = false;
     this.current_audio = null;
@@ -235,6 +282,7 @@ function Player() {
     this.button.addEventListener("click", this.toggle.bind(this));
     this.div = document.getElementById("playing");
     this.div.innerHTML = "not playing";
+    this.timeline = new Timeline();
 }
 
 Player.prototype.toggle = function() {
@@ -254,13 +302,20 @@ Player.prototype.toggle = function() {
 }
 
 Player.prototype.trigger = function(audio_file) {
-    if (this.current_audio === null) {
-	this.current_audio = audio_file;
-    }
-    else if (this.current_audio != audio_file) {
+    if (this.current_audio != null && this.current_audio != audio_file) {
 	this.current_audio.elem.pause();
 	this.playing = false;
+	this.current_audio = null;
+    }
+
+    if (this.current_audio === null) {
 	this.current_audio = audio_file;
+	console.log("triggered");
+	this.current_audio.elem.addEventListener('timeupdate', function() {
+	    console.log(this.current_audio.elem.currentTime);
+	    console.log(this.current_audio.duration);
+	    this.timeline.update( this.current_audio.elem.currentTime, this.current_audio.duration);
+	}.bind(this));
     }
     this.toggle();
 }
@@ -297,6 +352,16 @@ function makeFolderDiv(folder) {
     return div;
 }
 
+function makeBCDiv(folder) {
+    var div = document.createElement("div");
+    div.className = "clickable breadcrumb";
+    div.innerHTML = folder.name.split("/").pop();
+    div.addEventListener("click", function() {
+	changeDir(folder);
+    });
+    return div;
+}
+
 function makeAudio(filename) {
     var elem = document.createElement("audio");
     elem.src = filename;
@@ -320,7 +385,7 @@ function makeAudioDiv(div, name) {
 
 function makeFileDiv(name) {
     var div = document.createElement("div");
-    div.className = "clickable";
+    div.className = "clickable files";
     div.innerHTML = basename(name);
 
     var ext = name.substring(name.lastIndexOf('.') + 1);
@@ -328,6 +393,17 @@ function makeFileDiv(name) {
 	makeAudioDiv(div, name);
     }
     return div;
+}
+
+// returns a list of Dirs
+function getParentDirs(cwd) {
+    var parents = [cwd];
+    var rent = cwd.par;
+    while (rent != null) {
+	parents.push(rent);
+	rent = rent.par;
+    }
+    return parents.reverse();
 }
 
 function changeDir(cwd) {
@@ -341,13 +417,28 @@ function changeDir(cwd) {
 
     folderFrag = document.createElement("div");
     folderFrag.id = "folders";
-    if (cwd.par != null) {
-	folderFrag.appendChild(makeFolderDiv(cwd.par));
-    }
+    // if (cwd.par != null) {
+    //     folderFrag.appendChild(makeFolderDiv(cwd.par));
+    // }
     for (f in cwd.folders) {
 	folderFrag.appendChild(makeFolderDiv(cwd.folders[f]));
     }
-    document.getElementById("cwd").innerHTML = cwd.name;
+    cwdFrag = document.createElement("div");
+    cwdFrag.id = "cwd";
+    var parents = getParentDirs(cwd);
+    for (i in parents) {
+	cwdFrag.appendChild(makeBCDiv(parents[i]));
+    }
+    // var cwd_accordion = "";
+    // var tree = cwd.name.split("/");
+    // for (i in tree) {
+    //     cwd_accordion = (i == 0) ? tree[i] : [cwd_accordion, tree[i]].join("/");
+    //     getParentDir(cwd_accordion, cwd);
+    //     // need to search for folder in json
+    //     cwdFrag.appendChild(makeFolderDiv({'name':cwd_accordion}));
+    // }
+    document.getElementById("cwd").replaceWith(cwdFrag);
+    // document.getElementById("cwd").innerHTML = cwd.name;
     document.getElementById("files").replaceWith(fileFrag);
     document.getElementById("folders").replaceWith(folderFrag);
 }
