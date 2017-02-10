@@ -1,4 +1,6 @@
 <!DOCTYPE html>
+<head>
+<meta charset="UTF-8">
 <style>
 @import url('https://fonts.googleapis.com/css?family=Cantarell|Slabo+27px');
 
@@ -187,6 +189,7 @@ float:right;
 }
 
 </style>
+</head>
 <html>
 <?php
 /*
@@ -322,10 +325,7 @@ Player.prototype.trigger = function(audio_file) {
 
     if (this.current_audio === null) {
 	this.current_audio = audio_file;
-	console.log("triggered");
 	this.current_audio.elem.addEventListener('timeupdate', function() {
-	    console.log(this.current_audio.elem.currentTime);
-	    console.log(this.current_audio.duration);
 	    this.timeline.update( this.current_audio.elem.currentTime, this.current_audio.duration);
 	}.bind(this));
     }
@@ -401,7 +401,7 @@ function makeFileDiv(name) {
     div.innerHTML = basename(name);
 
     var ext = name.substring(name.lastIndexOf('.') + 1);
-    if (ext === "ogg") {
+    if (["ogg","mp3","wav","m4a"].some( valid_ext => ext === valid_ext )) {
 	makeAudioDiv(div, name);
     }
     return div;
@@ -465,12 +465,10 @@ function openPath(path) {
     dir = data;
     for (i in paths) {
 	iterpath += "/" + paths[i];
-	console.log(iterpath+"\n");
 	if (dir.files.includes(iterpath)) {
 	    break;
 	}
 	for (f in dir.folders) {
-	    console.log("name is " + dir.folders[f].name);
 	    if (dir.folders[f].name === iterpath) {
 		dir = dir.folders[f];
 		break;
