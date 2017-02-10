@@ -34,9 +34,14 @@ background-color: #FCF6F1;
 float:left;
 margin:1px;
 }
-
+/*
 .left {
 width:63%;
+margin: 20px 2%;
+}
+*/
+
+.left {
 margin: 20px 2%;
 }
 
@@ -80,7 +85,7 @@ margin-left:2%;
 }
 
 #song {
-width:90%;
+width:50%;
 margin-left:1em;
 }
 
@@ -184,7 +189,12 @@ float:right;
 </style>
 <html>
 <?php
-function getDirContents($dir){
+/*
+ * @param string $dir is the path to get contents of
+ * @return array $results
+ *
+ */
+function getDirContents($dir) {
     $results = [
 	"name" => $dir,
 	"files" => [],
@@ -198,7 +208,9 @@ function getDirContents($dir){
 	    $results["files"][] = $path;
 	} 
 	else if($value != "." && $value != "..") {
-	    $results["folders"][] = getDirContents($path, $results[$path]);
+	    // not sure why there are 2 args to this
+	    // $results["folders"][] = getDirContents($path, $results[$path]);
+	    $results["folders"][] = getDirContents($path);
 	}
     }
 
