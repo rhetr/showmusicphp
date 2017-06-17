@@ -328,6 +328,9 @@ Player.prototype.trigger = function(audio_file) {
 	this.current_audio.elem.addEventListener('timeupdate', function() {
 	    this.timeline.update( this.current_audio.elem.currentTime, this.current_audio.duration);
 	}.bind(this));
+	this.current_audio.elem.addEventListener('ended', function() {
+	    this.toggle();
+	}.bind(this));
     }
     this.toggle();
 }
